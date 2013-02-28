@@ -53,19 +53,32 @@ void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 
     SDL_UpdateRect(screen, x, y, 1, 1);
 }
 
-int64_t get_ticks()
+uint64_t timespec_to_miliseconds(const struct timespec * ts)
 {
-	struct timespec ts;
-	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
-		//error
-	}
-	return (ts.tv_sec * 1000000000) + ts.tv_nsec;
+	return (ts->tv_sec * 1000) + (ts->tv_nsec / 1000000);
 }
 
-void sleep_ticks(int64_t ticks)
+struct timespec miliseconds_to_timespec(const uint64_t ticks)
 {
 	struct timespec ts;
-	ts.
+	ts.tv_sec = ticks / 1000;
+	ts.tv_nsec = (ticks % 1000) * 1000000;
+	return ts;
+}
+
+uint64_t get_ticks(void)
+{
+	struct timespec ts;
+	if ( clock_gettime(CLOCK_MONOTONIC, &ts) != 0 ) {
+		abort();
+	}
+	return timespec_to_miliseconds(&ts);
+}
+
+void sleep_ticks(const uint64_t ticks)
+{
+	struct timespec ts = miliseconds_to_timespec(ticks);
+	clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL);
 }
 
 void update(void)
@@ -81,9 +94,7 @@ void draw(void)
 int main(int argc, char *argv[])
 {
 	SDL_Surface *screen;
-	struct timespec ts;
-	int64_t ticks, next_game_tick;
-	int sleep_time;
+	uint64_t next_game_tick, sleep_time;
 	bool game_is_running = true;
 	
 	const int FRAMES_PER_SECOND = 25;
@@ -100,21 +111,21 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	ticks = get_ticks();
-	sleep_time = 0;
+	next_game_tick = get_ticks();
 
-	while(game_is_running)
+	while ( game_is_running )
 	{
 		update();
 		draw();
 		
 		next_game_tick += SKIP_TICKS;
 		sleep_time = next_game_tick - get_ticks();
-		if( sleep_time >= 0 ) {
+		if ( sleep_time >= 0 ) {
 			sleep_ticks( sleep_time );
 		}
 		else {
 			// Shit, we are running behind!
+			game_is_running = false;
 		}
 	}
 

@@ -3,6 +3,13 @@
 #include <stdbool.h>
 #include "SDL.h"
 
+/* Defines */
+#define FRAMES_PER_SECOND 25
+
+/* Globals */
+const int SKIP_TICKS = 1000 / FRAMES_PER_SECOND;
+bool game_is_running = true;
+
 void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 y)
 {
     Uint32 color = SDL_MapRGB(screen->format, R, G, B);
@@ -91,15 +98,27 @@ void draw(void)
 	
 }
 
+void input(void)
+{
+	SDL_Event event;
+
+	while ( SDL_PollEvent(&event) ) {
+		switch (event.type) {
+			case SDL_QUIT:
+				game_is_running = false;
+				break;
+			default:
+				fprintf(stderr, "Unkown event %u\n", event.type);
+				break;
+		}
+	}
+}
+
 int main(int argc, char *argv[])
 {
-	SDL_Surface *screen;
+	SDL_Surface * screen;
 	uint64_t next_game_tick, sleep_time;
-	bool game_is_running = true;
-	
-	const int FRAMES_PER_SECOND = 25;
-	const int SKIP_TICKS = 1000 / FRAMES_PER_SECOND;
-	
+
 	if ( SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO) < 0 ) {
 		fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
 		exit(1);
@@ -127,6 +146,8 @@ int main(int argc, char *argv[])
 			// Shit, we are running behind!
 			game_is_running = false;
 		}
+
+		input();
 	}
 
 	atexit(SDL_Quit);

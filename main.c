@@ -130,10 +130,15 @@ void update(int delta)
 		pos[i].x += vel[i].x;
 		pos[i].y += vel[i].y;
 
+		if (pos[i].x < 0)
+			pos[i].x = 0;
+		if (pos[i].y < 0)
+			pos[i].y = 0;
+
 		/* collision detection and response*/
-		if (pos[i].x >= WINDOW_WIDTH)
+		if ((pos[i].x >= WINDOW_WIDTH) || pos[i].x <= 0)
 			vel[i].x *= -1;
-		if (pos[i].y >= WINDOW_HEIGHT)
+		if ((pos[i].y >= WINDOW_HEIGHT) || pos[i].y <= 0)
 			vel[i].y *= -1;
 	}
 }
@@ -141,7 +146,12 @@ void update(int delta)
 void draw(SDL_Surface * screen)
 {
 	int i;
-	
+#if 0
+	/* clean screen */
+	SDL_FillRect(screen, NULL, 0x000000);
+	SDL_Flip(screen);
+#endif
+	/* draw all paticles */
 	for(i = 0; i < NUM_OF_PARTICLES; i++) {
 		DrawPixel(screen, 0xFF, 0xFF, 0xFF, pos[i].x, pos[i].y);
 	}

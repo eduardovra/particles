@@ -4,8 +4,8 @@
 #include "SDL.h"
 
 /* Defines */
-#define FRAMES_PER_SECOND	25
-#define NUM_OF_PARTICLES	15
+#define FRAMES_PER_SECOND	1
+#define NUM_OF_PARTICLES	1
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		480
 
@@ -99,8 +99,14 @@ void sleep_ticks(const uint64_t ticks)
 
 int get_random(int max)
 {
-	double random_number = rand() / (double) RAND_MAX;
-	return random_number * max;
+	static bool seeded = false;
+
+	if ( seeded == false ) {
+		srand(time(NULL));
+		seeded = true;
+	}
+
+	return rand() / (double) RAND_MAX * max;
 }
 
 void update(int delta)

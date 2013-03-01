@@ -4,11 +4,27 @@
 #include "SDL.h"
 
 /* Defines */
-#define FRAMES_PER_SECOND 25
+#define FRAMES_PER_SECOND	25
+#define NUM_OF_PARTICLES	5
+#define WINDOW_WIDTH		640
+#define WINDOW_HEIGHT		480
+
+/* Typedefs */
+typedef struct s_position {
+	int x;
+	int y;
+} st_position;
+
+typedef struct s_velocity {
+	int x;
+	int y;
+} st_velocity;
 
 /* Globals */
 const int SKIP_TICKS = 1000 / FRAMES_PER_SECOND;
 bool game_is_running = true;
+static st_position pos[NUM_OF_PARTICLES];
+static st_velocity vel[NUM_OF_PARTICLES];
 
 void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 y)
 {
@@ -88,14 +104,47 @@ void sleep_ticks(const uint64_t ticks)
 	clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL);
 }
 
-void update(void)
+int get_random(int max)
 {
-	
+	double random_number = rand() / (double) RAND_MAX;
+	return random_number * max;
 }
 
-void draw(void)
+void update(int delta)
 {
+	static bool initialized = false;
+	int i;
 	
+	if ( initialized == false ) {
+		for (i = 0; i < NUM_OF_PARTICLES; i++) {
+			pos[i].x = get_random(WINDOW_WIDTH);
+			pos[i].y = get_random(WINDOW_HEIGHT);
+			vel[i].x = get_random(20) - 10;
+			vel[i].y = get_random(20) - 10;
+		}
+		initialized = true;
+	}
+
+	/* move */
+	for (i = 0; i < NUM_OF_PARTICLES; i++) {
+		pos[i].x += vel[i].x;
+		pos[i].y += vel[i].y;
+
+		/* collision detection and response*/
+		if (pos[i].x >= WINDOW_WIDTH)
+			vel[i].x *= -1;
+		if (pos[i].y >= WINDOW_HEIGHT)
+			vel[i].y *= -1;
+	}
+}
+
+void draw(SDL_Surface * screen)
+{
+	int i;
+	
+	for(i = 0; i < NUM_OF_PARTICLES; i++) {
+		DrawPixel(screen, 0xFF, 0xFF, 0xFF, pos[i].x, pos[i].y);
+	}
 }
 
 void input(void)
@@ -124,7 +173,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	screen = SDL_SetVideoMode(640, 480, 16, SDL_SWSURFACE);
+	screen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 16, SDL_SWSURFACE);
 	if ( screen == NULL ) {
 		fprintf(stderr, "Unable to set 640x480 video: %s\n", SDL_GetError());
 		exit(1);
@@ -134,8 +183,8 @@ int main(int argc, char *argv[])
 
 	while ( game_is_running )
 	{
-		update();
-		draw();
+		update(SKIP_TICKS);
+		draw(screen);
 		
 		next_game_tick += SKIP_TICKS;
 		sleep_time = next_game_tick - get_ticks();

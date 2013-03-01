@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -O2 -D_GNU_SOURCE -DPLATFORM_UNIX -fPIC -Werror -Wfatal-errors
+CFLAGS=-Wall -g -fPIC -Werror -Wfatal-errors
 LDFLAGS=`sdl-config --static-libs` -lrt
 INCLUDE=`sdl-config --cflags`
 SRCS=main.c

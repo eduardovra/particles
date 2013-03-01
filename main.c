@@ -5,7 +5,7 @@
 
 /* Defines */
 #define FRAMES_PER_SECOND	25
-#define NUM_OF_PARTICLES	5
+#define NUM_OF_PARTICLES	15
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		480
 
@@ -30,11 +30,6 @@ void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 
 {
     Uint32 color = SDL_MapRGB(screen->format, R, G, B);
 
-    if ( SDL_MUSTLOCK(screen) ) {
-        if ( SDL_LockSurface(screen) < 0 ) {
-            return;
-        }
-    }
     switch (screen->format->BytesPerPixel) {
         case 1: { /* Assuming 8-bpp */
             Uint8 *bufp;
@@ -70,9 +65,7 @@ void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 
         }
         break;
     }
-    if ( SDL_MUSTLOCK(screen) ) {
-        SDL_UnlockSurface(screen);
-    }
+
     SDL_UpdateRect(screen, x, y, 1, 1);
 }
 
@@ -146,14 +139,18 @@ void update(int delta)
 void draw(SDL_Surface * screen)
 {
 	int i;
-#if 0
-	/* clean screen */
-	SDL_FillRect(screen, NULL, 0x000000);
-	SDL_Flip(screen);
-#endif
+
+	if ( SDL_MUSTLOCK(screen) ) {
+		if ( SDL_LockSurface(screen) < 0 ) {
+			return;
+		}
+	}
 	/* draw all paticles */
 	for(i = 0; i < NUM_OF_PARTICLES; i++) {
 		DrawPixel(screen, 0xFF, 0xFF, 0xFF, pos[i].x, pos[i].y);
+	}
+	if ( SDL_MUSTLOCK(screen) ) {
+		SDL_UnlockSurface(screen);
 	}
 }
 

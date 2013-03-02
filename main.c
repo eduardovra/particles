@@ -4,8 +4,8 @@
 #include "SDL.h"
 
 /* Defines */
-#define FRAMES_PER_SECOND	1
-#define NUM_OF_PARTICLES	1
+#define FRAMES_PER_SECOND	25
+#define NUM_OF_PARTICLES	5
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		480
 
@@ -65,8 +65,6 @@ void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 
 		}
 		break;
 	}
-
-	SDL_UpdateRect(screen, x, y, 1, 1);
 }
 
 uint64_t timespec_to_miliseconds(const struct timespec * ts)
@@ -106,7 +104,7 @@ int get_random(int max)
 		seeded = true;
 	}
 
-	return rand() / (double) RAND_MAX * max;
+	return (rand() / (double) RAND_MAX) * max;
 }
 
 void update(int delta)
@@ -124,11 +122,12 @@ void update(int delta)
 		initialized = true;
 	}
 
-	/* move */
 	for (i = 0; i < NUM_OF_PARTICLES; i++) {
+		/* move */
 		pos[i].x += vel[i].x;
 		pos[i].y += vel[i].y;
 
+		/* sanity check */
 		if (pos[i].x < 0)
 			pos[i].x = 0;
 		if (pos[i].y < 0)
@@ -158,6 +157,8 @@ void draw(SDL_Surface * screen)
 	if ( SDL_MUSTLOCK(screen) ) {
 		SDL_UnlockSurface(screen);
 	}
+
+	SDL_UpdateRect(screen, 0, 0, 0, 0);
 }
 
 void input(void)
@@ -166,6 +167,11 @@ void input(void)
 
 	while ( SDL_PollEvent(&event) ) {
 		switch (event.type) {
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+			case SDL_ACTIVEEVENT:
+			case SDL_MOUSEMOTION:
+				break;
 			case SDL_QUIT:
 				game_is_running = false;
 				break;
@@ -179,7 +185,7 @@ void input(void)
 int main(int argc, char *argv[])
 {
 	SDL_Surface * screen;
-	uint64_t next_game_tick, sleep_time;
+	uint64_t next_game_tick, sleep_time, ticks_now;
 
 	if ( SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO) < 0 ) {
 		fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
@@ -188,7 +194,8 @@ int main(int argc, char *argv[])
 
 	screen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 16, SDL_SWSURFACE);
 	if ( screen == NULL ) {
-		fprintf(stderr, "Unable to set 640x480 video: %s\n", SDL_GetError());
+		fprintf(stderr, "Unable to set %dx%d video: %s\n",
+				WINDOW_WIDTH, WINDOW_HEIGHT, SDL_GetError());
 		exit(1);
 	}
 
@@ -196,11 +203,14 @@ int main(int argc, char *argv[])
 
 	while ( game_is_running )
 	{
+		input();
 		update(SKIP_TICKS);
 		draw(screen);
 		
 		next_game_tick += SKIP_TICKS;
-		sleep_time = next_game_tick - get_ticks();
+		ticks_now = get_ticks();
+		sleep_time = ( next_game_tick > ticks_now ) ?
+				next_game_tick - ticks_now : 0;
 		if ( sleep_time >= 0 ) {
 			sleep_ticks( sleep_time );
 		}
@@ -208,12 +218,9 @@ int main(int argc, char *argv[])
 			// Shit, we are running behind!
 			game_is_running = false;
 		}
-
-		input();
 	}
 
 	atexit(SDL_Quit);
 
 	return 0;
 }
-

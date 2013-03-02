@@ -5,10 +5,17 @@
 
 #include <stdlib.h>
 #include <time.h>
-#include <stdbool.h>
 #include <assert.h>
 #include <math.h>
 #include "SDL.h"
+
+#ifdef WIN32
+typedef int bool;
+#define false 0
+#define true 1
+#else
+#include <stdbool.h>
+#endif
 
 /* Defines */
 #define FRAMES_PER_SECOND	25
@@ -42,7 +49,6 @@ void DrawPixel(SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 color)
 	switch (screen->format->BytesPerPixel) {
 		case 1: { /* Assuming 8-bpp */
 			Uint8 *bufp;
-
 			bufp = (Uint8 *)screen->pixels + y*screen->pitch + x;
 			*bufp = color;
 		}
@@ -157,7 +163,7 @@ void fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel)
 		}
 	}
 }
-
+#if 0
 uint64_t timespec_to_miliseconds(const struct timespec * ts)
 {
 	return (ts->tv_sec * 1000) + (ts->tv_nsec / 1000000);
@@ -170,6 +176,7 @@ struct timespec miliseconds_to_timespec(const uint64_t ticks)
 	ts.tv_nsec = (ticks % 1000) * 1000000;
 	return ts;
 }
+#endif
 
 uint64_t get_ticks(void)
 {
@@ -223,16 +230,24 @@ void update(int delta)
 		pos[i].y += vel[i].y;
 
 		/* sanity check */
-		if (pos[i].x < 0)
+		if (pos[i].x < 0){
 			pos[i].x = 0;
-		if (pos[i].y < 0)
+			vel[i].x *= -1;
+		}
+		if (pos[i].y < 0){
 			pos[i].y = 0;
+			vel[i].y *= -1;
+		}
 
 		/* collision detection and response*/
-		if ((pos[i].x >= WINDOW_WIDTH) || pos[i].x <= 0)
+		if (pos[i].x >= WINDOW_WIDTH) {
+			pos[i].x = WINDOW_WIDTH - 1;
 			vel[i].x *= -1;
-		if ((pos[i].y >= WINDOW_HEIGHT) || pos[i].y <= 0)
+		}
+		if (pos[i].y >= WINDOW_HEIGHT){
+			pos[i].y = WINDOW_HEIGHT - 1;
 			vel[i].y *= -1;
+		}
 	}
 }
 

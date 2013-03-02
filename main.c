@@ -1,6 +1,12 @@
+/*****************************************************************************
+ * main.c
+ * Author: <eduardovra@gmail.com>
+ * **************************************************************************/
+
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include <assert.h>
 #include "SDL.h"
 
 /* Defines */
@@ -22,9 +28,10 @@ typedef struct s_velocity {
 
 /* Globals */
 const int SKIP_TICKS = 1000 / FRAMES_PER_SECOND;
+st_position pos[NUM_OF_PARTICLES];
+st_velocity vel[NUM_OF_PARTICLES];
 bool game_is_running = true;
-static st_position pos[NUM_OF_PARTICLES];
-static st_velocity vel[NUM_OF_PARTICLES];
+bool leave_trail = false;
 
 void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 y)
 {
@@ -83,9 +90,7 @@ struct timespec miliseconds_to_timespec(const uint64_t ticks)
 uint64_t get_ticks(void)
 {
 	struct timespec ts;
-	if ( clock_gettime(CLOCK_MONOTONIC, &ts) != 0 ) {
-		abort();
-	}
+	assert( clock_gettime(CLOCK_MONOTONIC, &ts) == 0 );
 	return timespec_to_miliseconds(&ts);
 }
 
@@ -145,6 +150,10 @@ void draw(SDL_Surface * screen)
 {
 	int i;
 
+	/* clear screen */
+	if ( leave_trail == false )
+		SDL_FillRect(screen, NULL, 0);
+
 	if ( SDL_MUSTLOCK(screen) ) {
 		if ( SDL_LockSurface(screen) < 0 ) {
 			return;
@@ -191,6 +200,9 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
 		exit(1);
 	}
+
+	/* set the title bar */
+	SDL_WM_SetCaption("Particles", "Particles");
 
 	screen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 16, SDL_SWSURFACE);
 	if ( screen == NULL ) {

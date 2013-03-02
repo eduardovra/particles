@@ -7,6 +7,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <math.h>
 #include "SDL.h"
 
 /* Defines */
@@ -14,6 +15,9 @@
 #define NUM_OF_PARTICLES	5
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		480
+
+#define PIXEL_MODE
+//#define CIRCLE_MODE
 
 /* Typedefs */
 typedef struct s_position {
@@ -33,10 +37,8 @@ st_velocity vel[NUM_OF_PARTICLES];
 bool game_is_running = true;
 bool leave_trail = false;
 
-void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 y)
+void DrawPixel(SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 color)
 {
-	Uint32 color = SDL_MapRGB(screen->format, R, G, B);
-
 	switch (screen->format->BytesPerPixel) {
 		case 1: { /* Assuming 8-bpp */
 			Uint8 *bufp;
@@ -53,7 +55,7 @@ void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 
 			*bufp = color;
 		}
 		break;
-
+#if 0
 		case 3: { /* Slow 24-bpp mode, usually not used */
 			Uint8 *bufp;
 
@@ -63,7 +65,7 @@ void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 
 			*(bufp+screen->format->Bshift/8) = B;
 		}
 		break;
-
+#endif
 		case 4: { /* Probably 32-bpp */
 			Uint32 *bufp;
 
@@ -71,6 +73,88 @@ void DrawPixel(SDL_Surface *screen, Uint8 R, Uint8 G, Uint8 B, Sint32 x, Sint32 
 			*bufp = color;
 		}
 		break;
+	}
+}
+
+void draw_circle(SDL_Surface *surface, int n_cx, int n_cy, int radius, Uint32 pixel)
+{
+	// if the first pixel in the screen is represented by (0,0) (which is in sdl)
+	// remember that the beginning of the circle is not in the middle of the pixel
+	// but to the left-top from it:
+
+	double error = (double)-radius;
+	double x = (double)radius -0.5;
+	double y = (double)0.5;
+	double cx = n_cx - 0.5;
+	double cy = n_cy - 0.5;
+
+	while (x >= y)
+	{
+		DrawPixel(surface, (int)(cx + x), (int)(cy + y), pixel);
+		DrawPixel(surface, (int)(cx + y), (int)(cy + x), pixel);
+
+		if (x != 0)
+		{
+			DrawPixel(surface, (int)(cx - x), (int)(cy + y), pixel);
+			DrawPixel(surface, (int)(cx + y), (int)(cy - x), pixel);
+		}
+
+		if (y != 0)
+		{
+			DrawPixel(surface, (int)(cx + x), (int)(cy - y), pixel);
+			DrawPixel(surface, (int)(cx - y), (int)(cy + x), pixel);
+		}
+
+		if (x != 0 && y != 0)
+		{
+			DrawPixel(surface, (int)(cx - x), (int)(cy - y), pixel);
+			DrawPixel(surface, (int)(cx - y), (int)(cy - x), pixel);
+		}
+
+		error += y;
+		++y;
+		error += y;
+
+		if (error >= 0)
+		{
+			--x;
+			error -= x;
+			error -= x;
+		}
+	}
+}
+
+void fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel)
+{
+	static const int BPP = 2;
+
+	double dy;
+	double r = (double)radius;
+
+	for (dy = 1; dy <= r; dy += 1.0)
+	{
+		// This loop is unrolled a bit, only iterating through half of the
+		// height of the circle.  The result is used to draw a scan line and
+		// its mirror image below it.
+
+		// The following formula has been simplified from our original.  We
+		// are using half of the width of the circle because we are provided
+		// with a center and we need left/right coordinates.
+
+		double dx = floor(sqrt((2.0 * r * dy) - (dy * dy)));
+		int x = cx - dx;
+
+		// Grab a pointer to the left-most pixel for each half of the circle
+		Uint8 *target_pixel_a = (Uint8 *)surface->pixels + ((int)(cy + r - dy)) * surface->pitch + x * BPP;
+		Uint8 *target_pixel_b = (Uint8 *)surface->pixels + ((int)(cy - r + dy)) * surface->pitch + x * BPP;
+
+		for (; x <= cx + dx; x++)
+		{
+			*(Uint32 *)target_pixel_a = pixel;
+			*(Uint32 *)target_pixel_b = pixel;
+			target_pixel_a += BPP;
+			target_pixel_b += BPP;
+		}
 	}
 }
 
@@ -89,15 +173,21 @@ struct timespec miliseconds_to_timespec(const uint64_t ticks)
 
 uint64_t get_ticks(void)
 {
+#if 0
 	struct timespec ts;
 	assert( clock_gettime(CLOCK_MONOTONIC, &ts) == 0 );
 	return timespec_to_miliseconds(&ts);
+#endif
+	return SDL_GetTicks();
 }
 
 void sleep_ticks(const uint64_t ticks)
 {
+#if 0
 	struct timespec ts = miliseconds_to_timespec(ticks);
 	clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL);
+#endif
+	SDL_Delay(ticks);
 }
 
 int get_random(int max)
@@ -148,6 +238,7 @@ void update(int delta)
 
 void draw(SDL_Surface * screen)
 {
+	Uint32 color;
 	int i;
 
 	/* clear screen */
@@ -160,8 +251,14 @@ void draw(SDL_Surface * screen)
 		}
 	}
 	/* draw all paticles */
+	color = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0x00);
 	for(i = 0; i < NUM_OF_PARTICLES; i++) {
-		DrawPixel(screen, 0xFF, 0xFF, 0xFF, pos[i].x, pos[i].y);
+#ifdef PIXEL_MODE
+		DrawPixel(screen, pos[i].x, pos[i].y, color);
+#elif CIRCLE_MODE
+		fill_circle(screen, pos[i].x, pos[i].y, 15, 0xff000000 + color);
+		draw_circle(screen, pos[i].x, pos[i].y, 15, 0xffffffff);
+#endif
 	}
 	if ( SDL_MUSTLOCK(screen) ) {
 		SDL_UnlockSurface(screen);

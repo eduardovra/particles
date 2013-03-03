@@ -18,8 +18,8 @@ typedef int bool;
 #endif
 
 /* Defines */
-#define FRAMES_PER_SECOND	25
-#define NUM_OF_PARTICLES	1
+#define FRAMES_PER_SECOND	30
+#define NUM_OF_PARTICLES	5
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		480
 #define SCREEN_MARGIN		50
@@ -44,6 +44,8 @@ st_position pos[NUM_OF_PARTICLES];
 st_velocity vel[NUM_OF_PARTICLES];
 bool game_is_running = true;
 bool leave_trail = false;
+const int screen_width = WINDOW_WIDTH - (2 * SCREEN_MARGIN);
+const int screen_height = WINDOW_HEIGHT - (2 * SCREEN_MARGIN);
 
 void DrawPixel(SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 color)
 {
@@ -238,13 +240,17 @@ int get_random(int max)
 
 void update(int delta)
 {
+	const int x_sup_lim = WINDOW_WIDTH - SCREEN_MARGIN;
+	const int y_sup_lim = WINDOW_HEIGHT - SCREEN_MARGIN;
+	const int x_inf_lim = SCREEN_MARGIN;
+	const int y_inf_lim = SCREEN_MARGIN;
 	static bool initialized = false;
 	int i;
 	
 	if ( initialized == false ) {
 		for (i = 0; i < NUM_OF_PARTICLES; i++) {
-			pos[i].x = get_random(WINDOW_WIDTH);
-			pos[i].y = get_random(WINDOW_HEIGHT);
+			pos[i].x = get_random(screen_width);
+			pos[i].y = get_random(screen_height);
 			vel[i].x = get_random(20) - 10;
 			vel[i].y = get_random(20) - 10;
 		}
@@ -256,23 +262,21 @@ void update(int delta)
 		pos[i].x += vel[i].x;
 		pos[i].y += vel[i].y;
 
-		/* sanity check */
-		if (pos[i].x < 0){
-			pos[i].x = 0;
+		/* collision detection and response*/
+		if (pos[i].x <= x_inf_lim) {
+			pos[i].x = x_inf_lim + 1;
 			vel[i].x *= -1;
 		}
-		if (pos[i].y < 0){
-			pos[i].y = 0;
+		if (pos[i].x >= x_sup_lim) {
+			pos[i].x = x_sup_lim - 1;
+			vel[i].x *= -1;
+		}
+		if (pos[i].y <= y_inf_lim){
+			pos[i].y = y_inf_lim + 1;
 			vel[i].y *= -1;
 		}
-
-		/* collision detection and response*/
-		if (pos[i].x >= WINDOW_WIDTH) {
-			pos[i].x = WINDOW_WIDTH - 1;
-			vel[i].x *= -1;
-		}
-		if (pos[i].y >= WINDOW_HEIGHT){
-			pos[i].y = WINDOW_HEIGHT - 1;
+		if (pos[i].y >= y_sup_lim){
+			pos[i].y = y_sup_lim - 1;
 			vel[i].y *= -1;
 		}
 	}
@@ -294,8 +298,7 @@ void draw(SDL_Surface * screen)
 	}
 	/* draw surrounding rectangle */
 	drawRect(screen, SCREEN_MARGIN, SCREEN_MARGIN,
-			WINDOW_WIDTH - (SCREEN_MARGIN * 2),
-			WINDOW_HEIGHT - (SCREEN_MARGIN * 2), color);
+			screen_width, screen_height, color);
 
 	/* draw all paticles */
 	for(i = 0; i < NUM_OF_PARTICLES; i++) {

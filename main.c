@@ -39,14 +39,29 @@ typedef struct s_velocity {
 	int y;
 } st_velocity;
 
+typedef struct s_color {
+	int R;
+	int G;
+	int B;
+} st_color;
+
+typedef struct s_particle {
+	st_position pos;
+	st_velocity vel;
+	st_color color;
+} st_particle;
+
 /* Globals */
 const int SKIP_TICKS = 1000 / FRAMES_PER_SECOND;
-st_position pos[NUM_OF_PARTICLES];
-st_velocity vel[NUM_OF_PARTICLES];
+st_particle particles[NUM_OF_PARTICLES];
 bool game_is_running = true;
 bool leave_trail = false;
 const int screen_width = WINDOW_WIDTH - (2 * SCREEN_MARGIN);
 const int screen_height = WINDOW_HEIGHT - (2 * SCREEN_MARGIN);
+const int x_sup_lim = WINDOW_WIDTH - SCREEN_MARGIN;
+const int y_sup_lim = WINDOW_HEIGHT - SCREEN_MARGIN;
+const int x_inf_lim = SCREEN_MARGIN;
+const int y_inf_lim = SCREEN_MARGIN;
 
 void DrawPixel(SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 color)
 {
@@ -231,57 +246,34 @@ void sleep_ticks(const uint64_t ticks)
 int get_random(int min, int max)
 {
 	int range = ( max - min ) + 1;
-
-//	number = (rand() / (double) RAND_MAX) * max;
-
-	double test1 = rand() / (RAND_MAX + 1.0);
-	double test2 = test1 * range;
-
-	printf("test1=%f test2=%f\n", test1, test2);
-
-	return min + test2;
+	return ((rand() / (RAND_MAX + 1.0)) * range) + min;
 }
 
 void update(int delta)
 {
-	const int x_sup_lim = WINDOW_WIDTH - SCREEN_MARGIN;
-	const int y_sup_lim = WINDOW_HEIGHT - SCREEN_MARGIN;
-	const int x_inf_lim = SCREEN_MARGIN;
-	const int y_inf_lim = SCREEN_MARGIN;
-	static bool initialized = false;
 	int i;
-	
-	if ( initialized == false ) {
-		for (i = 0; i < NUM_OF_PARTICLES; i++) {
-			pos[i].x = get_random(x_inf_lim, x_sup_lim);
-			pos[i].y = get_random(y_inf_lim, y_sup_lim);
-			vel[i].x = get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
-			vel[i].y = get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
-		}
-		initialized = true;
-	}
 
 	for (i = 0; i < NUM_OF_PARTICLES; i++) {
 		/* move */
-		pos[i].x += vel[i].x;
-		pos[i].y += vel[i].y;
+		particles[i].pos.x += particles[i].vel.x;
+		particles[i].pos.y += particles[i].vel.y;
 
 		/* collision detection and response*/
-		if (pos[i].x <= x_inf_lim) {
-			pos[i].x = x_inf_lim + 1;
-			vel[i].x *= -1;
+		if (particles[i].pos.x <= x_inf_lim) {
+			particles[i].pos.x = x_inf_lim + 1;
+			particles[i].vel.x *= -1;
 		}
-		if (pos[i].x >= x_sup_lim) {
-			pos[i].x = x_sup_lim - 1;
-			vel[i].x *= -1;
+		if (particles[i].pos.x >= x_sup_lim) {
+			particles[i].pos.x = x_sup_lim - 1;
+			particles[i].vel.x *= -1;
 		}
-		if (pos[i].y <= y_inf_lim){
-			pos[i].y = y_inf_lim + 1;
-			vel[i].y *= -1;
+		if (particles[i].pos.y <= y_inf_lim){
+			particles[i].pos.y = y_inf_lim + 1;
+			particles[i].vel.y *= -1;
 		}
-		if (pos[i].y >= y_sup_lim){
-			pos[i].y = y_sup_lim - 1;
-			vel[i].y *= -1;
+		if (particles[i].pos.y >= y_sup_lim){
+			particles[i].pos.y = y_sup_lim - 1;
+			particles[i].vel.y *= -1;
 		}
 	}
 }
@@ -306,11 +298,13 @@ void draw(SDL_Surface * screen)
 
 	/* draw all paticles */
 	for(i = 0; i < NUM_OF_PARTICLES; i++) {
+		Uint32 par_color = SDL_MapRGB(screen->format,
+				particles[i].color.R, particles[i].color.G, particles[i].color.B);
 #if defined (PIXEL_MODE)
-		DrawPixel(screen, pos[i].x, pos[i].y, color);
+		DrawPixel(screen, particles[i].pos.x, particles[i].pos.y, par_color);
 #elif defined (CIRCLE_MODE)
-		fill_circle(screen, pos[i].x, pos[i].y, 15, 0xff000000 + color);
-		draw_circle(screen, pos[i].x, pos[i].y, 15, 0xffffffff);
+		fill_circle(screen, particles[i].pos.x, particles[i].pos.y, 15, 0xff000000 + par_color);
+		draw_circle(screen, particles[i].pos.x, particles[i].pos.y, 15, 0xffffffff);
 #endif
 	}
 	if ( SDL_MUSTLOCK(screen) ) {
@@ -341,6 +335,24 @@ void input(void)
 	}
 }
 
+void init_particles(st_particle * particles, ssize_t num_of_particles)
+{
+	int i;
+
+	for (i = 0; i < NUM_OF_PARTICLES; i++) {
+		/* position */
+		particles[i].pos.x = get_random(x_inf_lim, x_sup_lim);
+		particles[i].pos.y = get_random(y_inf_lim, y_sup_lim);
+		/* velocity */
+		particles[i].vel.x = get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
+		particles[i].vel.y = get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
+		/* color */
+		particles[i].color.R = get_random(0, 0xFF);
+		particles[i].color.G = get_random(0, 0xFF);
+		particles[i].color.B = get_random(0, 0xFF);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	SDL_Surface * screen;
@@ -363,6 +375,9 @@ int main(int argc, char *argv[])
 
 	/* seed pseudo random numbers generator */
 	srand(time(NULL));
+
+	/* init particles */
+	init_particles(particles, NUM_OF_PARTICLES);
 
 	next_game_tick = get_ticks();
 

@@ -20,6 +20,7 @@ typedef int bool;
 /* Defines */
 #define FRAMES_PER_SECOND	30
 #define NUM_OF_PARTICLES	5
+#define PARTICLES_MAX_VEL	10
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		480
 #define SCREEN_MARGIN		50
@@ -226,16 +227,19 @@ void sleep_ticks(const uint64_t ticks)
 	SDL_Delay(ticks);
 }
 
-int get_random(int max)
+/* return a random value between [min,max] */
+int get_random(int min, int max)
 {
-	static bool seeded = false;
+	int range = ( max - min ) + 1;
 
-	if ( seeded == false ) {
-		srand(time(NULL));
-		seeded = true;
-	}
+//	number = (rand() / (double) RAND_MAX) * max;
 
-	return (rand() / (double) RAND_MAX) * max;
+	double test1 = rand() / (RAND_MAX + 1.0);
+	double test2 = test1 * range;
+
+	printf("test1=%f test2=%f\n", test1, test2);
+
+	return min + test2;
 }
 
 void update(int delta)
@@ -249,10 +253,10 @@ void update(int delta)
 	
 	if ( initialized == false ) {
 		for (i = 0; i < NUM_OF_PARTICLES; i++) {
-			pos[i].x = get_random(screen_width);
-			pos[i].y = get_random(screen_height);
-			vel[i].x = get_random(20) - 10;
-			vel[i].y = get_random(20) - 10;
+			pos[i].x = get_random(x_inf_lim, x_sup_lim);
+			pos[i].y = get_random(y_inf_lim, y_sup_lim);
+			vel[i].x = get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
+			vel[i].y = get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
 		}
 		initialized = true;
 	}
@@ -356,6 +360,9 @@ int main(int argc, char *argv[])
 				WINDOW_WIDTH, WINDOW_HEIGHT, SDL_GetError());
 		exit(1);
 	}
+
+	/* seed pseudo random numbers generator */
+	srand(time(NULL));
 
 	next_game_tick = get_ticks();
 

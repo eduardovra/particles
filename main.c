@@ -22,6 +22,7 @@ typedef int bool;
 #define NUM_OF_PARTICLES	1
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		480
+#define SCREEN_MARGIN		50
 
 //#define PIXEL_MODE
 #define CIRCLE_MODE
@@ -80,6 +81,31 @@ void DrawPixel(SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 color)
 		}
 		break;
 	}
+}
+
+void drawLine(SDL_Surface *screen, Sint32 x0, Sint32 y0, Sint32 x1, Sint32 y1, Uint32 color)
+{
+	/* Bresenham's line algorithm */
+	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+	int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
+	int err = (dx>dy ? dx : -dy)/2, e2;
+
+	for(;;){
+		DrawPixel(screen, x0, y0, color);
+		if (x0==x1 && y0==y1) break;
+		e2 = err;
+		if (e2 >-dx) { err -= dy; x0 += sx; }
+		if (e2 < dy) { err += dx; y0 += sy; }
+	}
+}
+
+void drawRect(SDL_Surface *screen, Sint32 x, Sint32 y, int width, int height, Uint32 color)
+{
+	/* draw the 4 arests */
+	drawLine(screen, x, y, x + width, y, color);
+	drawLine(screen, x, y, x, y + height, color);
+	drawLine(screen, x + width, y, x + width, y + height, color);
+	drawLine(screen, x, y + height, x + width, y + height, color);
 }
 
 void draw_circle(SDL_Surface *surface, int n_cx, int n_cy, int radius, Uint32 pixel)
@@ -254,7 +280,7 @@ void update(int delta)
 
 void draw(SDL_Surface * screen)
 {
-	Uint32 color;
+	Uint32 color = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0x00);
 	int i;
 
 	/* clear screen */
@@ -266,8 +292,12 @@ void draw(SDL_Surface * screen)
 			return;
 		}
 	}
+	/* draw surrounding rectangle */
+	drawRect(screen, SCREEN_MARGIN, SCREEN_MARGIN,
+			WINDOW_WIDTH - (SCREEN_MARGIN * 2),
+			WINDOW_HEIGHT - (SCREEN_MARGIN * 2), color);
+
 	/* draw all paticles */
-	color = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0x00);
 	for(i = 0; i < NUM_OF_PARTICLES; i++) {
 #if defined (PIXEL_MODE)
 		DrawPixel(screen, pos[i].x, pos[i].y, color);

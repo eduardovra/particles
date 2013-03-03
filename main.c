@@ -19,12 +19,12 @@ typedef int bool;
 
 /* Defines */
 #define FRAMES_PER_SECOND	25
-#define NUM_OF_PARTICLES	5
+#define NUM_OF_PARTICLES	1
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		480
 
-#define PIXEL_MODE
-//#define CIRCLE_MODE
+//#define PIXEL_MODE
+#define CIRCLE_MODE
 
 /* Typedefs */
 typedef struct s_position {
@@ -163,6 +163,7 @@ void fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel)
 		}
 	}
 }
+
 #if 0
 uint64_t timespec_to_miliseconds(const struct timespec * ts)
 {
@@ -268,9 +269,9 @@ void draw(SDL_Surface * screen)
 	/* draw all paticles */
 	color = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0x00);
 	for(i = 0; i < NUM_OF_PARTICLES; i++) {
-#ifdef PIXEL_MODE
+#if defined (PIXEL_MODE)
 		DrawPixel(screen, pos[i].x, pos[i].y, color);
-#elif CIRCLE_MODE
+#elif defined (CIRCLE_MODE)
 		fill_circle(screen, pos[i].x, pos[i].y, 15, 0xff000000 + color);
 		draw_circle(screen, pos[i].x, pos[i].y, 15, 0xffffffff);
 #endif

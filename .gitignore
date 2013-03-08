@@ -19,3 +19,6 @@ particles
 
 # Dep files
 *.dep
+
+# Eclipse
+.autotools

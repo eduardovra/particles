@@ -10,7 +10,7 @@ TARGET=particles
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $?
+	$(CC) $(LDFLAGS) -o $@ $(OBJS)
 
 $(OBJS): %.o: %.c %.dep
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $<

@@ -38,3 +38,10 @@ void sleep_ticks(const uint64_t ticks)
 #endif
 	SDL_Delay(ticks);
 }
+
+/* return a random value between [min,max] */
+int get_random(int min, int max)
+{
+	int range = ( max - min ) + 1;
+	return ((rand() / (RAND_MAX + 1.0)) * range) + min;
+}

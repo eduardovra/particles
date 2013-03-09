@@ -66,13 +66,6 @@ const int y_sup_lim = WINDOW_HEIGHT - SCREEN_MARGIN;
 const int x_inf_lim = SCREEN_MARGIN;
 const int y_inf_lim = SCREEN_MARGIN;
 
-/* return a random value between [min,max] */
-int get_random(int min, int max)
-{
-	int range = ( max - min ) + 1;
-	return ((rand() / (RAND_MAX + 1.0)) * range) + min;
-}
-
 void update(int delta)
 {
 	int i;

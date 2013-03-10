@@ -4,10 +4,13 @@
  * **************************************************************************/
 
 #include <math.h>
+#include <assert.h>
 #include "draw.h"
 
 void DrawPixel(SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 color)
 {
+	assert( (x >= 0) && (y >= 0) );
+
 	switch (screen->format->BytesPerPixel) {
 		case 1: { /* Assuming 8-bpp */
 			Uint8 *bufp;

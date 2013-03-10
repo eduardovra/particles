@@ -22,24 +22,29 @@ typedef int bool;
 
 /* Defines */
 #define FRAMES_PER_SECOND	30
-#define NUM_OF_PARTICLES	5
-#define PARTICLES_MAX_VEL	10
-#define WINDOW_WIDTH		640
-#define WINDOW_HEIGHT		480
-#define SCREEN_MARGIN		50
+#define NUM_OF_PARTICLES	1
+#define PARTICLES_MAX_VEL	0.5
+#define WINDOW_WIDTH		800
+#define WINDOW_HEIGHT		800
+#define SCREEN_MARGIN		200
 
 //#define PIXEL_MODE
 #define CIRCLE_MODE
 
+/* Macros */
+#define screen_x(_x) (_x * screen_width * 0.5) + (screen_width * 0.5 * 2)
+#define screen_y(_y) (_y * screen_height * 0.5) + (screen_height * 0.5 * 2)
+#define NUM_OF_PLANES	( sizeof(__planes) / sizeof(__planes[0]) )
+
 /* Typedefs */
 typedef struct s_position {
-	int x;
-	int y;
+	float x;
+	float y;
 } st_position;
 
 typedef struct s_velocity {
-	int x;
-	int y;
+	float x;
+	float y;
 } st_velocity;
 
 typedef struct s_color {
@@ -54,21 +59,87 @@ typedef struct s_particle {
 	st_color color;
 } st_particle;
 
+typedef struct s_point {
+	float x;
+	float y;
+} st_point;
+
+typedef struct s_line {
+	st_point p1;
+	st_point p2;
+} st_line;
+
+typedef struct s_plane {
+	float a;	/*! normal vector x */
+	float b;	/*! normal vector y */
+	float c;	/*! normal vector distance to the origin */
+	st_line line;
+} st_plane;
+
 /* Globals */
 const int SKIP_TICKS = 1000 / FRAMES_PER_SECOND;
 st_particle particles[NUM_OF_PARTICLES];
 bool game_is_running = true;
 bool leave_trail = false;
+bool rotate_planes = false;
 const int screen_width = WINDOW_WIDTH - (2 * SCREEN_MARGIN);
 const int screen_height = WINDOW_HEIGHT - (2 * SCREEN_MARGIN);
 const int x_sup_lim = WINDOW_WIDTH - SCREEN_MARGIN;
 const int y_sup_lim = WINDOW_HEIGHT - SCREEN_MARGIN;
 const int x_inf_lim = SCREEN_MARGIN;
 const int y_inf_lim = SCREEN_MARGIN;
+const float rotation_step = M_PI / 180.0;
 
-void update(int delta)
+int _planes[][3] = {
+	{1, 0, 1},
+	{0, -1, 1},
+	{-1, 0, 1},
+	{0, 1, 1},
+};
+
+float _angles[] = {
+	0,					/* plane 1 */
+	M_PI_2,				/* plane 2 */
+	M_PI,				/* plane 3 */
+	M_PI_2 + M_PI_4,	/* plane 4 */
+};
+
+st_plane __planes[] = {
+	{ .a = 1, .b = 0, .c = 1, .line.p1.x = 1, .line.p1.y = 1, .line.p2.x = 1, .line.p2.y = -1 },
+	{ .a = 0, .b = -1, .c = 1, .line.p1.x = -1, .line.p1.y = -1, .line.p2.x = 1, .line.p2.y = -1 },
+	{ .a = -1, .b = 0, .c = 1, .line.p1.x = -1, .line.p1.y = 1, .line.p2.x = -1, .line.p2.y = -1 },
+	{ .a = 0, .b = 1, .c = 1, .line.p1.x = -1, .line.p1.y = 1, .line.p2.x = 1, .line.p2.y = 1 },
+};
+
+void rotate_point(st_point * point, const float angle)
+{
+	float x = point->x, y = point->y;
+
+	point->x = (x * cos(angle)) - (y * sin(angle));
+	point->y = (x * sin(angle)) + (y * cos(angle));
+}
+
+void updatePlanes(const int delta)
 {
 	int i;
+	const float angle = rotation_step;
+
+	for (i = 0; i < NUM_OF_PLANES; i++) {
+		__planes[i].a = (__planes[i].a * cos(angle)) - (__planes[i].b * sin(angle));
+		__planes[i].b = (__planes[i].a * sin(angle)) + (__planes[i].b * cos(angle));
+
+		rotate_point(&__planes[i].line.p1, angle);
+		rotate_point(&__planes[i].line.p2, angle);
+	}
+}
+
+void update(const int delta)
+{
+	int i, j;
+
+	/* apply plane rotation */
+	if ( rotate_planes )
+		updatePlanes(delta);
 
 	for (i = 0; i < NUM_OF_PARTICLES; i++) {
 		/* move */
@@ -76,28 +147,36 @@ void update(int delta)
 		particles[i].pos.y += particles[i].vel.y;
 
 		/* collision detection and response*/
-		if (particles[i].pos.x <= x_inf_lim) {
-			particles[i].pos.x = x_inf_lim + 1;
-			particles[i].vel.x *= -1;
+		for (j = 0; j < NUM_OF_PLANES; j++) {
+			float distance = (particles[i].pos.x * __planes[j].a) + (particles[i].pos.y * __planes[j].b) + __planes[j].c;
+			float norm_vel = (particles[i].vel.x * __planes[j].a) + (particles[i].vel.y * __planes[j].b);
+
+			if ( (distance < 0) && (norm_vel < 0) ) {
+				printf("collison detected on plane %d\n", j);
+				particles[i].vel.x -= 2 * __planes[j].a * ((particles[i].vel.x * __planes[j].a) + (particles[i].vel.y * __planes[j].b));
+				particles[i].vel.y -= 2 * __planes[j].b * ((particles[i].vel.x * __planes[j].a) + (particles[i].vel.y * __planes[j].b));
+			}
 		}
-		if (particles[i].pos.x >= x_sup_lim) {
-			particles[i].pos.x = x_sup_lim - 1;
-			particles[i].vel.x *= -1;
-		}
-		if (particles[i].pos.y <= y_inf_lim){
-			particles[i].pos.y = y_inf_lim + 1;
-			particles[i].vel.y *= -1;
-		}
-		if (particles[i].pos.y >= y_sup_lim){
-			particles[i].pos.y = y_sup_lim - 1;
-			particles[i].vel.y *= -1;
-		}
+	}
+}
+
+void drawPlanes(SDL_Surface * screen)
+{
+	/* draw 4 lines of a square */
+	const Uint32 color = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0x00);
+	int i, size = sizeof(__planes) / sizeof(__planes[0]);
+
+	for (i = 0; i < size; i++) {
+		drawLine(screen,
+				screen_x(__planes[i].line.p1.x), screen_y(__planes[i].line.p1.y),
+				screen_x(__planes[i].line.p2.x), screen_y(__planes[i].line.p2.y),
+				color);
 	}
 }
 
 void draw(SDL_Surface * screen)
 {
-	Uint32 color = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0x00);
+	//Uint32 color = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0x00);
 	int i;
 
 	/* clear screen */
@@ -110,18 +189,19 @@ void draw(SDL_Surface * screen)
 		}
 	}
 	/* draw surrounding rectangle */
-	drawRect(screen, SCREEN_MARGIN, SCREEN_MARGIN,
-			screen_width, screen_height, color);
+	//drawRect(screen, SCREEN_MARGIN, SCREEN_MARGIN,
+	//		screen_width, screen_height, color);
+	drawPlanes(screen);
 
 	/* draw all paticles */
 	for(i = 0; i < NUM_OF_PARTICLES; i++) {
 		Uint32 par_color = SDL_MapRGB(screen->format,
 				particles[i].color.R, particles[i].color.G, particles[i].color.B);
 #if defined (PIXEL_MODE)
-		DrawPixel(screen, particles[i].pos.x, particles[i].pos.y, par_color);
+		DrawPixel(screen, screen_x(particles[i].pos.x), screen_y(particles[i].pos.y), par_color);
 #elif defined (CIRCLE_MODE)
-		fill_circle(screen, particles[i].pos.x, particles[i].pos.y, 15, 0xff000000 + par_color);
-		draw_circle(screen, particles[i].pos.x, particles[i].pos.y, 15, 0xffffffff);
+		fill_circle(screen, screen_x(particles[i].pos.x), screen_y(particles[i].pos.y), 15, 0xff000000 + par_color);
+		draw_circle(screen, screen_x(particles[i].pos.x), screen_y(particles[i].pos.y), 15, 0xffffffff);
 #endif
 	}
 	if ( SDL_MUSTLOCK(screen) ) {
@@ -158,15 +238,15 @@ void init_particles(st_particle * particles, ssize_t num_of_particles)
 
 	for (i = 0; i < NUM_OF_PARTICLES; i++) {
 		/* position */
-		particles[i].pos.x = get_random(x_inf_lim, x_sup_lim);
-		particles[i].pos.y = get_random(y_inf_lim, y_sup_lim);
+		particles[i].pos.x = 0;//get_random(-1, 1);
+		particles[i].pos.y = 0;//get_random(-1, 1);
 		/* velocity */
-		particles[i].vel.x = get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
-		particles[i].vel.y = get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
+		particles[i].vel.x = -0.009;//get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
+		particles[i].vel.y = 0.007;//get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
 		/* color */
-		particles[i].color.R = get_random(0, 0xFF);
-		particles[i].color.G = get_random(0, 0xFF);
-		particles[i].color.B = get_random(0, 0xFF);
+		particles[i].color.R = 0xFF;//get_random(0, 0xFF);
+		particles[i].color.G = 0xFF;//get_random(0, 0xFF);
+		particles[i].color.B = 0xFF;//get_random(0, 0xFF);
 	}
 }
 

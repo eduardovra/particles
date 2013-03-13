@@ -7,9 +7,22 @@
 #include <assert.h>
 #include "draw.h"
 
+Sint32 map_to_screen(int i, float p)
+{
+	return 0;
+}
+
+static void validate_cord(SDL_Surface * screen, Sint32 x, Sint32 y)
+{
+	assert(x >= 0);
+	assert(x <= screen->w);
+	assert(y >= 0);
+	assert(y <= screen->h);
+}
+
 void DrawPixel(SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 color)
 {
-	assert( (x >= 0) && (y >= 0) );
+	validate_cord(screen, x, y);
 
 	switch (screen->format->BytesPerPixel) {
 		case 1: { /* Assuming 8-bpp */

@@ -24,16 +24,16 @@ typedef int bool;
 #define FRAMES_PER_SECOND	30
 #define NUM_OF_PARTICLES	1
 #define PARTICLES_MAX_VEL	0.5
-#define WINDOW_WIDTH		800
-#define WINDOW_HEIGHT		800
+#define WINDOW_WIDTH		640
+#define WINDOW_HEIGHT		640
 #define SCREEN_MARGIN		200
 
 //#define PIXEL_MODE
 #define CIRCLE_MODE
 
 /* Macros */
-#define screen_x(_x) (_x * screen_width * 0.5) + (screen_width * 0.5 * 2)
-#define screen_y(_y) (_y * screen_height * 0.5) + (screen_height * 0.5 * 2)
+//#define screen_x(_x) (_x * screen_width * 0.5) + (screen_width * 0.5)
+//#define screen_y(_y) (_y * screen_height * 0.5) + (screen_height * 0.5)
 #define NUM_OF_PLANES	( sizeof(__planes) / sizeof(__planes[0]) )
 
 /* Typedefs */
@@ -81,7 +81,7 @@ const int SKIP_TICKS = 1000 / FRAMES_PER_SECOND;
 st_particle particles[NUM_OF_PARTICLES];
 bool game_is_running = true;
 bool leave_trail = false;
-bool rotate_planes = false;
+bool rotate_planes = true;
 const int screen_width = WINDOW_WIDTH - (2 * SCREEN_MARGIN);
 const int screen_height = WINDOW_HEIGHT - (2 * SCREEN_MARGIN);
 const int x_sup_lim = WINDOW_WIDTH - SCREEN_MARGIN;
@@ -110,6 +110,18 @@ st_plane __planes[] = {
 	{ .a = -1, .b = 0, .c = 1, .line.p1.x = -1, .line.p1.y = 1, .line.p2.x = -1, .line.p2.y = -1 },
 	{ .a = 0, .b = 1, .c = 1, .line.p1.x = -1, .line.p1.y = 1, .line.p2.x = 1, .line.p2.y = 1 },
 };
+
+Sint32 screen_x(float _x) {
+	Sint32 x = _x * (WINDOW_WIDTH - SCREEN_MARGIN) * 0.5;
+	x = x + WINDOW_WIDTH * 0.5;
+	return x;
+}
+
+Sint32 screen_y(float _y) {
+	Sint32 y = _y * (WINDOW_HEIGHT - SCREEN_MARGIN) * 0.5;
+	y = y + WINDOW_HEIGHT * 0.5;
+	return y;
+}
 
 void rotate_point(st_point * point, const float angle)
 {
@@ -241,8 +253,8 @@ void init_particles(st_particle * particles, ssize_t num_of_particles)
 		particles[i].pos.x = 0;//get_random(-1, 1);
 		particles[i].pos.y = 0;//get_random(-1, 1);
 		/* velocity */
-		particles[i].vel.x = -0.009;//get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
-		particles[i].vel.y = 0.007;//get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
+		particles[i].vel.x = -0.05;//get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
+		particles[i].vel.y = 0.07;//get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
 		/* color */
 		particles[i].color.R = 0xFF;//get_random(0, 0xFF);
 		particles[i].color.G = 0xFF;//get_random(0, 0xFF);

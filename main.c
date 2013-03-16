@@ -22,8 +22,8 @@ typedef int bool;
 
 /* Defines */
 #define FRAMES_PER_SECOND	30
-#define NUM_OF_PARTICLES	1
-#define PARTICLES_MAX_VEL	0.3
+#define NUM_OF_PARTICLES	5
+#define PARTICLES_MAX_VEL	0.5
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		640
 #define SCREEN_MARGIN		200
@@ -88,7 +88,7 @@ const int x_sup_lim = WINDOW_WIDTH - SCREEN_MARGIN;
 const int y_sup_lim = WINDOW_HEIGHT - SCREEN_MARGIN;
 const int x_inf_lim = SCREEN_MARGIN;
 const int y_inf_lim = SCREEN_MARGIN;
-const float rotation_step = M_PI / 180.0;
+const float rotation_step = (M_PI / 180.0) * 10;
 
 int _planes[][3] = {
 	{1, 0, 1},
@@ -131,10 +131,10 @@ void rotate_point(st_point * point, const float angle)
 	point->y = (x * sin(angle)) + (y * cos(angle));
 }
 
-void updatePlanes(const int delta)
+void updatePlanes(const float delta)
 {
 	int i;
-	const float angle = rotation_step;
+	const float angle = rotation_step * delta;
 
 	for (i = 0; i < NUM_OF_PLANES; i++) {
 		__planes[i].a = (__planes[i].a * cos(angle)) - (__planes[i].b * sin(angle));
@@ -145,7 +145,7 @@ void updatePlanes(const int delta)
 	}
 }
 
-void update(const int delta)
+void update(const float delta)
 {
 	int i, j;
 
@@ -155,8 +155,8 @@ void update(const int delta)
 
 	for (i = 0; i < NUM_OF_PARTICLES; i++) {
 		/* move */
-		particles[i].pos.x += particles[i].vel.x;
-		particles[i].pos.y += particles[i].vel.y;
+		particles[i].pos.x += particles[i].vel.x * delta;
+		particles[i].pos.y += particles[i].vel.y * delta;
 
 		/* collision detection and response*/
 		for (j = 0; j < NUM_OF_PLANES; j++) {
@@ -164,7 +164,7 @@ void update(const int delta)
 			float norm_vel = (particles[i].vel.x * __planes[j].a) + (particles[i].vel.y * __planes[j].b);
 
 			if ( (distance < 0) && (norm_vel < 0) ) {
-				printf("collison detected on plane %d\n", j);
+				fprintf(stderr, "particle %d collided on plane %d\n", i, j);
 				particles[i].vel.x -= 2 * __planes[j].a * ((particles[i].vel.x * __planes[j].a) + (particles[i].vel.y * __planes[j].b));
 				particles[i].vel.y -= 2 * __planes[j].b * ((particles[i].vel.x * __planes[j].a) + (particles[i].vel.y * __planes[j].b));
 			}
@@ -212,8 +212,8 @@ void draw(SDL_Surface * screen)
 #if defined (PIXEL_MODE)
 		DrawPixel(screen, screen_x(particles[i].pos.x), screen_y(particles[i].pos.y), par_color);
 #elif defined (CIRCLE_MODE)
-		fill_circle(screen, screen_x(particles[i].pos.x), screen_y(particles[i].pos.y), 15, 0xff000000 + par_color);
-		draw_circle(screen, screen_x(particles[i].pos.x), screen_y(particles[i].pos.y), 15, 0xffffffff);
+		fill_circle(screen, screen_x(particles[i].pos.x), screen_y(particles[i].pos.y), 12, 0xff000000 + par_color);
+		draw_circle(screen, screen_x(particles[i].pos.x), screen_y(particles[i].pos.y), 12, 0xffffffff);
 #endif
 	}
 	if ( SDL_MUSTLOCK(screen) ) {
@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
 	while ( game_is_running )
 	{
 		input();
-		update(SKIP_TICKS);
+		update(SKIP_TICKS / 1000.0);
 		draw(screen);
 		
 		next_game_tick += SKIP_TICKS;

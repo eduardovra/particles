@@ -45,3 +45,8 @@ float get_random(float min, float max)
 	float range = ( max - min ) + 1;
 	return ((rand() / (RAND_MAX + 1.0)) * range) + min;
 }
+
+float get_random_float(float min, float max)
+{
+	return min + (float)rand()/((float)RAND_MAX/(max-min));
+}

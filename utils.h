@@ -14,4 +14,6 @@ void sleep_ticks(const uint64_t ticks);
 
 float get_random(float min, float max);
 
+float get_random_float(float min, float max);
+
 #endif /* _UTILS_H_INCLUDED_ */

@@ -23,7 +23,7 @@ typedef int bool;
 /* Defines */
 #define FRAMES_PER_SECOND	30
 #define NUM_OF_PARTICLES	1
-#define PARTICLES_MAX_VEL	0.5
+#define PARTICLES_MAX_VEL	0.3
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		640
 #define SCREEN_MARGIN		200
@@ -250,15 +250,15 @@ void init_particles(st_particle * particles, ssize_t num_of_particles)
 
 	for (i = 0; i < NUM_OF_PARTICLES; i++) {
 		/* position */
-		particles[i].pos.x = 0;//get_random(-1, 1);
-		particles[i].pos.y = 0;//get_random(-1, 1);
+		particles[i].pos.x = get_random_float(-1, 1);
+		particles[i].pos.y = get_random_float(-1, 1);
 		/* velocity */
-		particles[i].vel.x = -0.05;//get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
-		particles[i].vel.y = 0.07;//get_random(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
+		particles[i].vel.x = get_random_float(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
+		particles[i].vel.y = get_random_float(-PARTICLES_MAX_VEL, PARTICLES_MAX_VEL);
 		/* color */
-		particles[i].color.R = 0xFF;//get_random(0, 0xFF);
-		particles[i].color.G = 0xFF;//get_random(0, 0xFF);
-		particles[i].color.B = 0xFF;//get_random(0, 0xFF);
+		particles[i].color.R = get_random(0, 0xFF);
+		particles[i].color.G = get_random(0, 0xFF);
+		particles[i].color.B = get_random(0, 0xFF);
 	}
 }
 

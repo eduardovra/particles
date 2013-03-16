@@ -22,7 +22,7 @@ typedef int bool;
 
 /* Defines */
 #define FRAMES_PER_SECOND	30
-#define NUM_OF_PARTICLES	5
+#define NUM_OF_PARTICLES	1
 #define PARTICLES_MAX_VEL	0.5
 #define WINDOW_WIDTH		640
 #define WINDOW_HEIGHT		640
@@ -32,8 +32,6 @@ typedef int bool;
 #define CIRCLE_MODE
 
 /* Macros */
-//#define screen_x(_x) (_x * screen_width * 0.5) + (screen_width * 0.5)
-//#define screen_y(_y) (_y * screen_height * 0.5) + (screen_height * 0.5)
 #define NUM_OF_PLANES	( sizeof(__planes) / sizeof(__planes[0]) )
 
 /* Typedefs */
@@ -89,20 +87,6 @@ const int y_sup_lim = WINDOW_HEIGHT - SCREEN_MARGIN;
 const int x_inf_lim = SCREEN_MARGIN;
 const int y_inf_lim = SCREEN_MARGIN;
 const float rotation_step = (M_PI / 180.0) * 10;
-
-int _planes[][3] = {
-	{1, 0, 1},
-	{0, -1, 1},
-	{-1, 0, 1},
-	{0, 1, 1},
-};
-
-float _angles[] = {
-	0,					/* plane 1 */
-	M_PI_2,				/* plane 2 */
-	M_PI,				/* plane 3 */
-	M_PI_2 + M_PI_4,	/* plane 4 */
-};
 
 st_plane __planes[] = {
 	{ .a = 1, .b = 0, .c = 1, .line.p1.x = 1, .line.p1.y = 1, .line.p2.x = 1, .line.p2.y = -1 },
@@ -200,9 +184,7 @@ void draw(SDL_Surface * screen)
 			return;
 		}
 	}
-	/* draw surrounding rectangle */
-	//drawRect(screen, SCREEN_MARGIN, SCREEN_MARGIN,
-	//		screen_width, screen_height, color);
+	/* draw border planes */
 	drawPlanes(screen);
 
 	/* draw all paticles */

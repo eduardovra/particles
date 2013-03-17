@@ -170,6 +170,21 @@ void drawPlanes(SDL_Surface * screen)
 	}
 }
 
+void drawText(SDL_Surface * screen)
+{
+	int i, pos_y = 0;
+	char buf[128];
+
+	for (i = 0; i < NUM_OF_PARTICLES; i++) {
+		snprintf(buf, sizeof(buf), "Particle %d pos x = %f y = %f", i, particles[i].pos.x, particles[i].pos.y);
+		RenderTextToSurface(buf, 0, pos_y, screen);
+		pos_y += 16;
+		snprintf(buf, sizeof(buf), "Particle %d vel x = %f y = %f", i, particles[i].vel.x, particles[i].vel.y);
+		RenderTextToSurface(buf, 0, pos_y, screen);
+		pos_y += 16;
+	}
+}
+
 void draw(SDL_Surface * screen)
 {
 	//Uint32 color = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0x00);
@@ -198,6 +213,10 @@ void draw(SDL_Surface * screen)
 		draw_circle(screen, screen_x(particles[i].pos.x), screen_y(particles[i].pos.y), 12, 0xffffffff);
 #endif
 	}
+
+	/* draw surface text */
+	drawText(screen);
+
 	if ( SDL_MUSTLOCK(screen) ) {
 		SDL_UnlockSurface(screen);
 	}
@@ -262,6 +281,11 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Unable to set %dx%d video: %s\n",
 				WINDOW_WIDTH, WINDOW_HEIGHT, SDL_GetError());
 		exit(1);
+	}
+
+	if ( TTF_Init() == -1 )
+	{
+		fprintf(stderr, "Unable to initialize SDL_ttf: %s \n", TTF_GetError());
 	}
 
 	/* seed pseudo random numbers generator */

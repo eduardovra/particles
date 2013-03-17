@@ -166,3 +166,31 @@ void fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel)
 		}
 	}
 }
+
+int RenderTextToSurface(char * Text, int x, int y, SDL_Surface *Dest)
+{
+	SDL_Rect rect = { x, y, 100, 50 };
+	SDL_Color TXT_Color;
+	TXT_Color.r = 0xFF;
+	TXT_Color.g = 0xFF;
+	TXT_Color.b = 0xFF;
+
+	SDL_Surface *TTF_Message;
+	TTF_Font *font = TTF_OpenFont("/usr/share/fonts/liberation/LiberationSerif-Regular.ttf", 16);
+
+	if(!(TTF_Message = TTF_RenderText_Solid(font, Text, TXT_Color)))
+	{
+		SDL_FreeSurface(TTF_Message);
+		return 1;
+	}
+
+	//put_surface(x, y, TTF_Message, Dest);
+	if (SDL_BlitSurface(TTF_Message, NULL, Dest, &rect) != 0)
+	{
+		fprintf(stderr, "Erro imprimindo texto\n");
+	}
+
+	SDL_FreeSurface(TTF_Message);
+
+	return 0;
+}

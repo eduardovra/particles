@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -g -fPIC -Werror -Wfatal-errors
-LDFLAGS=`sdl-config --static-libs` -lrt
+LDFLAGS=`sdl-config --static-libs` -lSDL_ttf -lrt
 INCLUDE=`sdl-config --cflags`
 SRCS=main.c utils.c draw.c
 OBJS=$(SRCS:.c=.o)
